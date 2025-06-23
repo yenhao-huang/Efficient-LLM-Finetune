@@ -1,0 +1,6 @@
+scikit-learn
+datasets
+transformers[torch]
+torch 
+torchvision 
+torchaudio
