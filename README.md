@@ -1,34 +1,56 @@
+# 🔍 Memory-Efficient LLM Finetuning with LoRA, Quantization, and Gradient Checkpointing
+
+This project explores techniques to **reduce GPU memory usage** while finetuning large language models using **DeepSeek-R1-Distill-Qwen-1.5B**, including:
+
+* Gradient Checkpointing
+* 4-bit / 8-bit Quantization
+* LoRA (Low-Rank Adaptation)
+
+
 TODO
 * experiment
     * time
-    * memory
-        * inference
-        * non-inference
 
     
 ## Requirements
-python=3.12
+* `python=3.12`
+* `transformers`
+* `bitsandbytes`
+
 
 ## Used Tool
 transformers + bitsandbytes
 
-## Methodologies
+### Memory Trace Tool
+`print_trainable_parameters()` in huggingface
+
+## Model Used
+
+* `deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B`
+* Default `sequence_length = 16384`
+
+## Techniques Used
+
+### Gradient Checkpoint
+Reduces memory usage by recomputing intermediate activations during backpropagation.
+
+`model.gradient_checkpointing_enable()`
 
 ### Quantization 
+Quantization reduces the precision of model weights to 4-bit or 8-bit.
 
-Configs 
-* **`load_in_4bit=True`**
-  → Store model parameters in **4-bit format** (NF4 or FP4), greatly reducing VRAM usage.
+#### Configs
 
-* **`bnb_4bit_use_double_quant=True`**
-  → Enable **double quantization**, where weights are first quantized to 8-bit, then to 4-bit.
-  **Improves accuracy** and reduces information loss.
+```python
+BitsAndBytesConfig(
+    load_in_4bit=True,                       # use 4-bit weight
+    bnb_4bit_use_double_quant=True,          # double quantization
+    bnb_4bit_quant_type="nf4",               # or "fp4"
+    bnb_4bit_compute_dtype=torch.float16     # computation in float16
+)
+```
 
-* **`bnb_4bit_compute_dtype=torch.float16`**
-  → Set the **computation precision** for forward and backward passes.
-  Common values: `float16`, `bfloat16`, or `float32`.
-
-Overview
+#### Memory Flow
 ```
 VRAM
  ↓
@@ -49,13 +71,15 @@ VRAM
 VRAM
 ```
 
-### LoRa
-**Configs**
+###  LoRA (Low-Rank Adaptation)
+LoRA reduces trainable parameters, leading to lower memory usage for gradients and optimizer states.
+
+#### Configs
 * `r`: rank of the low-rank matrices
 * `lora_alpha`: a scaling factor
 * `lora_dropout`: reduce overfitting
 
-**Formula**
+#### Formula
 
 $$
 W_{\text{adapted}} = W + \frac{\alpha}{r} \cdot (A \cdot B)
@@ -67,20 +91,108 @@ Where:
 * $W$ is the frozen pre-trained weight
 * $A$ and $B$ are trainable low-rank matrices
 
-
 ## Results
-### Memory
 
-(PEFT)
-(Quantization)
-(Activation)
+Open gradient checkpointing to avoid OOM
 
-### Accuracy
-finetune: 
-without: 0.12
+### 💾 GPU Memory Usage Summary
 
-### Time 
-without: 16m/1000
+#### 1. Sequence Length Comparison (Fixed: 4-bit, Rank=8)
+
+| Sequence Length | GPU Memory |
+| --------------- | ---------- |
+| 1024            | 1.2 GB     |
+| 4096            | 1.4 GB     |
+| 16384           | 2.73 GB    |
+
+---
+
+#### 2. LoRA Rank Comparison (Fixed: 4-bit, seq\_len=16384)
+
+| LoRA Rank | Trainable Params | GPU Memory |
+| --------- | ---------------- | ---------- |
+| 1         | 0.13M            | 2.72 GB    |
+| 4         | 0.53M            | 2.73 GB    |
+| 8         | 1.09M            | 2.73 GB    |
+
+---
+
+#### 3. Quantization Comparison (Fixed: Rank=8, seq\_len=16384)
+
+| Quantization | GPU Memory |
+| ------------ | ---------- |
+| 4-bit        | 2.73 GB    |
+| 8-bit        | 3.49 GB    |
+| float16      | 8.8 GB     |
+
+---
+
+#### 4. Overall Memory Trend
+
+| Component           | Impact              |
+| ------------------- | ------------------- |
+| ↑ `sequence_length` | ↑ Activation memory |
+| ↑ `LoRA rank`       | ↑ Trainable params  |
+| ↑ `bit precision`   | ↑ Weight size       |
+
+---
+
+### ✅ Gradient Checkpointing
+
+| Setting  | Result    |
+| -------- | --------- |
+| Disabled | ❌ OOM     |
+| Enabled  | ✅ Success |
+
+---
+
+### Accuracy Summary
+
+#### 1. Overall Finetune(FT) Performance
+
+| Setting               | Accuracy |
+| --------------------- | -------- |
+| All optimizations off | x     |
+| All optimizations on  | ↑        |
+| Without FT  | 0.12   |
+
+> ✅ `seq_len=1024`, `quantization=4bit`, `LoRA rank=8`
+> ❌ `seq_len=16384`, `bit=16`, no LoRA
+
+---
+
+#### 2. LoRA Comparison (Fixed: 4bit, seq\_len=1024)
+
+| LoRA Setting       | Accuracy |
+| ------------------ | -------- |
+| With LoRA (Rank=8) | ↑        |
+| Without LoRA       | ↓        |
+
+---
+
+#### 3. Quantization Comparison (Fixed: LoRA Rank=8, seq\_len=1024)
+
+| Quantization | Accuracy |
+| ------------ | -------- |
+| 4-bit        | ↑        |
+| None         | ↓        |
+
+> ❌ "None" quantization = LoRA only
+> ✅ "4-bit" quantization + LoRA
+
+---
+
+#### 4. Sequence Length Comparison (Fixed: LoRA Rank=8, 4-bit)
+
+| Seq Length | Accuracy |
+| ---------- | -------- |
+| 1024       | ↑        |
+| 16384      | ↓        |
 
 
-gradient checkpoint: 不能跑 -> 可以跑
+---
+
+## Reference
+
+* Model: [DeepSeek-R1-Distill-Qwen-1.5B](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B)
+* Discussion on `sequence_length`: [Issue #22](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B/discussions/22)

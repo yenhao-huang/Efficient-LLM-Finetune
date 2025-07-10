@@ -6,12 +6,17 @@ def data_loading(dataset_name):
     return raw_data
 
 # Output: DatasetDir: {"train":tokenized_train_data,"test":tokenized_test_data}
-def data_preprocess(raw_data, model_name, text_col, label_col):
+def data_preprocess(raw_data, model_name, text_col, label_col, sequence_len=16384):
     tokenizer = AutoTokenizer.from_pretrained(model_name, ignore_mismatched_sizes=True)
 
     def tokenize(batch):
         texts = [x if isinstance(x, str) else "" for x in batch[text_col]]
-        return tokenizer(texts, padding="max_length", truncation=True)
+        return tokenizer(
+            texts, 
+            padding="max_length", 
+            truncation=True,
+            max_length=sequence_len,
+            )
 
     tokenized_data = raw_data.map(tokenize, batched=True)
     tokenized_data.set_format(type="torch", columns=["input_ids", "attention_mask", label_col])
