@@ -45,7 +45,6 @@ def set_train_agent_PEFT(model_name, train_dataset, eval_dataset, tokenizer, num
     )
     model = get_peft_model(model, config)
     model.gradient_checkpointing_enable()
-    model.enable_input_require_grads()
 
     args = TrainingArguments(
         output_dir=output_dir,

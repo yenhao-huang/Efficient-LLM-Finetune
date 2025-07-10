@@ -37,12 +37,10 @@ if __name__ == "__main__":
         output_dir,
         args.label_col,
     )
-    import torch
-    print(torch.cuda.memory_summary(device=0))
+
     try:
         train_agent.train()
     except torch.cuda.OutOfMemoryError as e:
-        print("❌ CUDA OOM 發生！")
         print("=== CUDA Memory Summary ===")
         print(torch.cuda.memory_summary())
         raise e
