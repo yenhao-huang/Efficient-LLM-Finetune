@@ -1,6 +1,6 @@
 # Memory-Efficient LLM Finetuning
 
-> This project explores techniques to **reduce GPU memory usage by up to 16×** during fine-tuning of large language models, using **DeepSeek-R1-Distill-Qwen-1.5B** as the base model. These techniques include:
+This project explores techniques to **reduce GPU memory usage by up to 16×** during fine-tuning of large language models, using **DeepSeek-R1-Distill-Qwen-1.5B** as the base model. These techniques include:
 
 * Gradient Checkpointing
 * 4-bit / 8-bit Quantization
@@ -113,7 +113,7 @@ Where:
 
 ## Results
 
-Note: Open gradient checkpointing to avoid OOM
+Note: Always open gradient checkpointing to avoid OOM
 
 ### GPU Memory Usage Summary
 
@@ -124,9 +124,9 @@ Note: Open gradient checkpointing to avoid OOM
 | All optimizations off | 23.5 GB  |
 | All optimizations on  | 1.2 GB   |
 
-> All optimizations on: `seq_len=1024`, `quantization=4bit`, `LoRA rank=8`
->
 > All optimizations off: `seq_len=16384`, `bit=16`, no LoRA
+>
+> All optimizations on: `seq_len=1024`, `quantization=4bit`, `LoRA rank=8`
 
 #### 2. Sequence Length Comparison (Fixed: 4-bit, Rank=8)
 
@@ -138,23 +138,24 @@ Note: Open gradient checkpointing to avoid OOM
 
 ---
 
-#### 3. LoRA Rank Comparison (Fixed: 4-bit, seq\_len=16384)
-
-| LoRA Rank | Trainable Params | GPU Memory |
-| --------- | ---------------- | ---------- |
-| 1         | 0.13M            | 2.72 GB    |
-| 4         | 0.53M            | 2.73 GB    |
-| 8         | 1.09M            | 2.73 GB    |
-
----
-
-#### 4. Quantization Comparison (Fixed: Rank=8, seq\_len=16384)
+#### 3. Quantization Comparison (Fixed: Rank=8, seq\_len=16384)
 
 | Quantization | GPU Memory |
 | ------------ | ---------- |
 | 4-bit        | 2.73 GB    |
 | 8-bit        | 3.49 GB    |
 | float16      | 8.80 GB     |
+
+
+---
+
+#### 4. LoRA Rank Comparison (Fixed: 4-bit, seq\_len=16384)
+
+| LoRA Rank | Trainable Params | GPU Memory |
+| --------- | ---------------- | ---------- |
+| 1         | 0.13M            | 2.72 GB    |
+| 4         | 0.53M            | 2.73 GB    |
+| 8         | 1.09M            | 2.73 GB    |
 
 ---
 
@@ -176,9 +177,10 @@ Note: Open gradient checkpointing to avoid OOM
 | All optimizations on  | 100% |
 | Without FT  | 12%   |
 
-> All optimizations on: `seq_len=1024`, `quantization=4bit`, `LoRA rank=8`
->
 > All optimizations off: `seq_len=16384`, `bit=16`, no LoRA
+>
+> All optimizations on: `seq_len=1024`, `quantization=4bit`, `LoRA rank=8`
+
 
 ---
 
