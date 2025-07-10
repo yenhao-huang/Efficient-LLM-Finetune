@@ -1,4 +1,4 @@
-# 🔍 Memory-Efficient LLM Finetuning with LoRA, Quantization, and Gradient Checkpointing
+# Memory-Efficient LLM Finetuning with LoRA, Quantization, and Gradient Checkpointing
 
 This project explores techniques to **reduce GPU memory usage** while finetuning large language models using **DeepSeek-R1-Distill-Qwen-1.5B**, including:
 
@@ -9,25 +9,48 @@ This project explores techniques to **reduce GPU memory usage** while finetuning
 
 TODO
 * experiment
-    * time
-
-    
-## Requirements
-* `python=3.12`
-* `transformers`
-* `bitsandbytes`
+    * accuracy
 
 
-## Used Tool
-transformers + bitsandbytes
+Sure! Here's the English version of your `README` intro and instructions, revised for clarity and professionalism:
 
-### Memory Trace Tool
-`print_trainable_parameters()` in huggingface
+---
 
-## Model Used
+## How to Run
 
-* `deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B`
-* Default `sequence_length = 16384`
+### 1. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Navigate to the experiment directory
+
+```bash
+cd experiments
+```
+
+### 3. Run fine-tuning
+
+```bash
+bash finetune.sh
+```
+
+### 4. Run evaluation
+
+```bash
+bash evaluate.sh
+```
+
+---
+
+## 📘 Introduction
+
+* **Dataset**: HuggingFace IMDB sentiment classification
+* **Model**: [`deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B`](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B)
+
+  * Default `sequence_length = 16384` (you can reduce this in tokenizer or training arguments to save memory)
+
 
 ## Techniques Used
 
@@ -38,6 +61,8 @@ Reduces memory usage by recomputing intermediate activations during backpropagat
 
 ### Quantization 
 Quantization reduces the precision of model weights to 4-bit or 8-bit.
+
+Libaray: `transformers + bitsandbytes`
 
 #### Configs
 
@@ -73,6 +98,8 @@ VRAM
 
 ###  LoRA (Low-Rank Adaptation)
 LoRA reduces trainable parameters, leading to lower memory usage for gradients and optimizer states.
+
+Libaray: `peft`
 
 #### Configs
 * `r`: rank of the low-rank matrices
