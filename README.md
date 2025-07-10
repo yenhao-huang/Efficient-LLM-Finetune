@@ -1,15 +1,11 @@
 # Memory-Efficient LLM Finetuning
 
-This project explores techniques to **reduce GPU memory usage** while finetuning large language models using **DeepSeek-R1-Distill-Qwen-1.5B**, including:
+> This project explores techniques to **reduce GPU memory usage by up to 16×** during fine-tuning of large language models, using **DeepSeek-R1-Distill-Qwen-1.5B** as the base model. These techniques include:
 
 * Gradient Checkpointing
 * 4-bit / 8-bit Quantization
 * LoRA (Low-Rank Adaptation)
-
-
-TODO
-* experiment
-    * accuracy
+* sequence_len
 
 ## How to Run
 
