@@ -17,6 +17,7 @@ def parse_args():
     parser.add_argument("--seq_len", type=int, default=1024)
     parser.add_argument("--n_labels", type=int, default=2)
     parser.add_argument("--n_rank", type=int, default=8)
+    parser.add_argument("--enable_lora", type=int, default=1)
     parser.add_argument("--bit_precision", type=int, default=4)
     parser.add_argument("--model", type=str, default="deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B")
     parser.add_argument("--output_dir", type=str, default="./results")
@@ -32,8 +33,11 @@ if __name__ == "__main__":
     output_dir, log_dir = utils.make_dir_with_timestamp(args.output_dir, args.log_dir)
     raw_data = data_utils.data_loading(args.dataset)
     tonkenized_data, tokenizer = data_utils.data_preprocess(raw_data, args.model, args.text_col, args.label_col, args.seq_len)
-    train_dataset, eval_dataset, _ = data_utils.select_partial_data(tonkenized_data, 10000, 1000)
-    #train_dataset, eval_dataset, _ = data_utils.select_partial_data(tonkenized_data, 10, 1)
+    # For accuracy evaluation
+    # train_dataset, eval_dataset, _ = data_utils.select_partial_data(tonkenized_data, 10000, 1000)
+    # For memory usage testing
+    train_dataset, eval_dataset, _ = data_utils.select_partial_data(tonkenized_data, 10, 1)
+
     train_agent = model_utils.set_train_agent_PEFT(
         args.model, 
         train_dataset, 
@@ -45,6 +49,7 @@ if __name__ == "__main__":
         args.label_col,
         args.n_rank,
         args.bit_precision,
+        args.enable_lora,
     )
 
     run_training()

@@ -1,10 +1,24 @@
 from transformers import AutoModelForSequenceClassification, Trainer, TrainingArguments, BitsAndBytesConfig
 import torch
-from peft import get_peft_model, LoraConfig, TaskType
+from peft import PeftConfig, PeftModel, get_peft_model, LoraConfig, TaskType
 from utils.utils import CUDAMemoryTrackerCallback
 
-def set_eval_agent(model_name, num_labels, metrics_strategy, output_dir, eval_batch):
-    model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=num_labels, ignore_mismatched_sizes=True)
+def set_eval_agent(
+    model_name, 
+    num_labels, 
+    metrics_strategy, 
+    output_dir, 
+    eval_batch, 
+    enable_lora=False
+    ):
+    if enable_lora:
+        peft_config = PeftConfig.from_pretrained(model_name)
+        base_model = AutoModelForSequenceClassification.from_pretrained(peft_config.base_model_name_or_path)
+        model = PeftModel.from_pretrained(base_model, model_name)
+    else:
+        model = AutoModelForSequenceClassification.from_pretrained(
+            model_name, num_labels=num_labels, ignore_mismatched_sizes=True
+        )
 
     args = TrainingArguments(
         output_dir=output_dir, 
@@ -30,6 +44,7 @@ def set_train_agent_PEFT(
     label_col, 
     n_rank,
     bit_precision,
+    enable_lora,
     ):
     
     if bit_precision == 4:
@@ -53,17 +68,20 @@ def set_train_agent_PEFT(
         quantization_config=quant_config,
     )
 
-    config = LoraConfig(
-        task_type=TaskType.SEQ_CLS,  # 任務類型：分類
-        r=n_rank,                         # bottleneck 維度
-        lora_alpha=32,
-        lora_dropout=0.1,
-        bias="none",
-    )
-    model = get_peft_model(model, config)
+    if enable_lora:
+        config = LoraConfig(
+            task_type=TaskType.SEQ_CLS,  # 任務類型：分類
+            r=n_rank,                         # bottleneck 維度
+            lora_alpha=32,
+            lora_dropout=0.1,
+            bias="none",
+        )
+        model = get_peft_model(model, config)
+        print(model.print_trainable_parameters())
+
     model.gradient_checkpointing_enable()
     model.config.use_cache = False
-    print(model.print_trainable_parameters())
+
 
     use_bf16 = bit_precision is None
     args = TrainingArguments(
@@ -87,6 +105,6 @@ def set_train_agent_PEFT(
         eval_dataset=eval_dataset,
         tokenizer=tokenizer,
         compute_metrics=metrics_strategy,
-        callbacks=[CUDAMemoryTrackerCallback(log_every=50)],
+        callbacks=[CUDAMemoryTrackerCallback(log_every=5)],
     )
     return train_agent

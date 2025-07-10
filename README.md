@@ -1,4 +1,4 @@
-# Memory-Efficient LLM Finetuning with LoRA, Quantization, and Gradient Checkpointing
+# Memory-Efficient LLM Finetuning
 
 This project explores techniques to **reduce GPU memory usage** while finetuning large language models using **DeepSeek-R1-Distill-Qwen-1.5B**, including:
 
@@ -10,11 +10,6 @@ This project explores techniques to **reduce GPU memory usage** while finetuning
 TODO
 * experiment
     * accuracy
-
-
-Sure! Here's the English version of your `README` intro and instructions, revised for clarity and professionalism:
-
----
 
 ## How to Run
 
@@ -44,13 +39,14 @@ bash evaluate.sh
 
 ---
 
-## 📘 Introduction
+## Introduction
 
 * **Dataset**: HuggingFace IMDB sentiment classification
+  * Train/Eval/Test = 10k/1k/10k
 * **Model**: [`deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B`](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B)
 
   * Default `sequence_length = 16384` (you can reduce this in tokenizer or training arguments to save memory)
-
+  * Batch size = 1
 
 ## Techniques Used
 
@@ -98,6 +94,7 @@ VRAM
 
 ###  LoRA (Low-Rank Adaptation)
 LoRA reduces trainable parameters, leading to lower memory usage for gradients and optimizer states.
+* optimizer states typically consume 4× the size of model parameters 
 
 Libaray: `peft`
 
@@ -120,21 +117,32 @@ Where:
 
 ## Results
 
-Open gradient checkpointing to avoid OOM
+Note: Open gradient checkpointing to avoid OOM
 
-### 💾 GPU Memory Usage Summary
+### GPU Memory Usage Summary
 
-#### 1. Sequence Length Comparison (Fixed: 4-bit, Rank=8)
+#### 1. Overall Memory Usage
+
+| Setting               | GPU Memory |
+| --------------------- | -------- |
+| All optimizations off | 23.5 GB  |
+| All optimizations on  | 1.2 GB   |
+
+> All optimizations on: `seq_len=1024`, `quantization=4bit`, `LoRA rank=8`
+>
+> All optimizations off: `seq_len=16384`, `bit=16`, no LoRA
+
+#### 2. Sequence Length Comparison (Fixed: 4-bit, Rank=8)
 
 | Sequence Length | GPU Memory |
 | --------------- | ---------- |
-| 1024            | 1.2 GB     |
-| 4096            | 1.4 GB     |
+| 1024            | 1.21 GB     |
+| 4096            | 1.42 GB     |
 | 16384           | 2.73 GB    |
 
 ---
 
-#### 2. LoRA Rank Comparison (Fixed: 4-bit, seq\_len=16384)
+#### 3. LoRA Rank Comparison (Fixed: 4-bit, seq\_len=16384)
 
 | LoRA Rank | Trainable Params | GPU Memory |
 | --------- | ---------------- | ---------- |
@@ -144,17 +152,17 @@ Open gradient checkpointing to avoid OOM
 
 ---
 
-#### 3. Quantization Comparison (Fixed: Rank=8, seq\_len=16384)
+#### 4. Quantization Comparison (Fixed: Rank=8, seq\_len=16384)
 
 | Quantization | GPU Memory |
 | ------------ | ---------- |
 | 4-bit        | 2.73 GB    |
 | 8-bit        | 3.49 GB    |
-| float16      | 8.8 GB     |
+| float16      | 8.80 GB     |
 
 ---
 
-#### 4. Overall Memory Trend
+#### 5. Overall Memory Trend
 
 | Component           | Impact              |
 | ------------------- | ------------------- |
@@ -162,60 +170,19 @@ Open gradient checkpointing to avoid OOM
 | ↑ `LoRA rank`       | ↑ Trainable params  |
 | ↑ `bit precision`   | ↑ Weight size       |
 
----
+### Accuracy
 
-### ✅ Gradient Checkpointing
-
-| Setting  | Result    |
-| -------- | --------- |
-| Disabled | ❌ OOM     |
-| Enabled  | ✅ Success |
-
----
-
-### Accuracy Summary
-
-#### 1. Overall Finetune(FT) Performance
+#### Overall Performance
 
 | Setting               | Accuracy |
 | --------------------- | -------- |
-| All optimizations off | x     |
-| All optimizations on  | ↑        |
-| Without FT  | 0.12   |
+| All optimizations off | 100% |
+| All optimizations on  | 100% |
+| Without FT  | 12%   |
 
-> ✅ `seq_len=1024`, `quantization=4bit`, `LoRA rank=8`
-> ❌ `seq_len=16384`, `bit=16`, no LoRA
-
----
-
-#### 2. LoRA Comparison (Fixed: 4bit, seq\_len=1024)
-
-| LoRA Setting       | Accuracy |
-| ------------------ | -------- |
-| With LoRA (Rank=8) | ↑        |
-| Without LoRA       | ↓        |
-
----
-
-#### 3. Quantization Comparison (Fixed: LoRA Rank=8, seq\_len=1024)
-
-| Quantization | Accuracy |
-| ------------ | -------- |
-| 4-bit        | ↑        |
-| None         | ↓        |
-
-> ❌ "None" quantization = LoRA only
-> ✅ "4-bit" quantization + LoRA
-
----
-
-#### 4. Sequence Length Comparison (Fixed: LoRA Rank=8, 4-bit)
-
-| Seq Length | Accuracy |
-| ---------- | -------- |
-| 1024       | ↑        |
-| 16384      | ↓        |
-
+> All optimizations on: `seq_len=1024`, `quantization=4bit`, `LoRA rank=8`
+>
+> All optimizations off: `seq_len=16384`, `bit=16`, no LoRA
 
 ---
 
