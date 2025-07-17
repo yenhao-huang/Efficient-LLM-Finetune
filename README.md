@@ -122,11 +122,12 @@ Note: Always open gradient checkpointing to avoid OOM
 | Setting               | GPU Memory |
 | --------------------- | -------- |
 | All optimizations off | 23.5 GB  |
-| All optimizations on  | 1.2 GB   |
+| Quantization+LoRa  | 2.73 GB  |
+| Quantization+LoRa+Sequence_Len  | 1.2 GB   |
 
 > All optimizations off: `seq_len=16384`, `bit=16`, no LoRA
->
-> All optimizations on: `seq_len=1024`, `quantization=4bit`, `LoRA rank=8`
+> Quantization+LoRa: `seq_len=16384`, `bit=4`, `LoRA rank=8`
+> Quantization+LoRa+Sequence_Len: `seq_len=1024`, `bit=4`, `LoRA rank=8`
 
 #### 2. Sequence Length Comparison (Fixed: 4-bit, Rank=8)
 
